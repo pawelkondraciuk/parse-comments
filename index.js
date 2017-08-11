@@ -42,9 +42,9 @@ parser.codeContext = function (str, opts) {
     if (comments.hasOwnProperty(key)) {
       var comment = comments[key];
       var o = parser.parseComment(comment.content, opts);
-      o.comment = comment;
-      o.context = parseContext(comment.code) || {};
-      o.context.begin = comment.codeStart;
+      // o.comment = comment;
+      // o.context = parseContext(comment.code) || {};
+      // o.context.begin = comment.codeStart;
       _.merge(o, parser.parseDescription(o));
       _.merge(o, parser.parseExamples(o));
       res.push(o);
@@ -112,6 +112,7 @@ parser.parseDescription = function (comment) {
 
 parser.parseExamples = function (comment) {
   comment.examples = codeBlocks(comment.description) || [];
+  
   return comment;
 };
 
@@ -123,7 +124,7 @@ parser.parseExamples = function (comment) {
  */
 
 parser.parseParams = function (param) {
-  var re = /(?:^\{([^\}]+)\}\s+)?(?:\[([\S]+)\]\s*)?(?:`([\S]+)`\s*)?([\s\S]*)?/;
+  var re = /(?:^\{([^\}]+)\}\s+)?(?:\[([\S=\' ]+)\]\s*)?(?:`([\S]+)`\s*)?([\s\S]*)?/;
   if (typeof param !== 'string') return {};
   var match = param.match(re);
   var params = {
@@ -146,14 +147,17 @@ parser.parseParams = function (param) {
 
 parser.parseSubprop = function (match, params) {
   var subprop = match[2];
-  if (/\./.test(subprop)) {
-    var parts = subprop.split('.');
-    var def = parts[1].split('=');
-    params.name = def[0];
-    params['default'] = def[1] || null;
-    subprop = parts[0];
+  var parts = subprop.split(',');
+  for (let part of parts) {
+    var def = part.split('=');
+    console.log(def);
+    var paramName = def[0].trim();
+    var values = def[1].replace(/'/g, '').split('|');
+    if (['values', 'default'].indexOf(paramName) >= 0) {
+      values = values.map(eval(params.type));
+    }
+    params[paramName] = values.length > 1 ? values : values[0];
   }
-  params.parent = subprop;
   return params;
 };
 
@@ -300,10 +304,6 @@ parser.normalizeHeading = function (obj) {
     /(?:prototype )?(?:method|property)/.test(o.context.type)) {
     o.heading.prefix = '.';
   }
-
-  if (/^[A-Z]/.test(o.name)) {
-    o.type = 'class';
-  }
   return o;
 };
 
@@ -382,12 +382,6 @@ parser.extractLinks = function (c, line) {
   if (nolink) {
     parser.nolinks.push(nolink);
   }
-
-  c.subheads = c.subheads || [];
-  var subhead = parser.parseSubHeading(line);
-  if (subhead) {
-    c.subheads.push(subhead);
-  }
 };
 
 /**
@@ -405,11 +399,13 @@ parser.parseTags = function (comment, options) {
   var props = _.merge({
     'return': 'returns',
     param   : 'params',
+    input   : 'inputs',
+    output  : 'outputs',
     property: 'properties',
     option  : 'options'
   }, opts.subprops);
 
-  props = _.omit(props, ['api', 'constructor', 'class', 'static', 'type']);
+  props = _.omit(props, ['parent', 'name', 'selector', 'constructor', 'class', 'type']);
 
   Object.keys(props).forEach(function (key) {
     var value = props[key];
@@ -516,12 +512,11 @@ parser.parseComment = function (content, options) {
 
   var diff = _.difference(props, singular).filter(function (prop) {
     return prop !== 'param' &&
-      prop !== 'constructor' &&
+      prop !== 'input' &&
       prop !== 'return' &&
       prop !== 'static' &&
       prop !== 'class' &&
-      prop !== 'type' &&
-      prop !== 'api';
+      prop !== 'type';
   });
 
   var pluralized = diff.map(function (name) {
