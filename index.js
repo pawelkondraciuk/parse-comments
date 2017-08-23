@@ -150,13 +150,12 @@ parser.parseSubprop = function (match, params) {
   var parts = subprop.split(',');
   for (let part of parts) {
     var def = part.split('=');
-    console.log(def);
     var paramName = def[0].trim();
     var values = def[1].replace(/'/g, '').split('|');
-    if (['values', 'default'].indexOf(paramName) >= 0) {
+    if (['values', 'default'].indexOf(paramName) >= 0 && eval(params.type)) {
       values = values.map(eval(params.type));
     }
-    params[paramName] = values.length > 1 ? values : values[0];
+    params[paramName] = values;
   }
   return params;
 };
@@ -405,7 +404,7 @@ parser.parseTags = function (comment, options) {
     option  : 'options'
   }, opts.subprops);
 
-  props = _.omit(props, ['parent', 'name', 'selector', 'constructor', 'class', 'type']);
+  props = _.omit(props, ['parent', 'name', 'selector', 'configurator', 'constructor', 'class', 'type']);
 
   Object.keys(props).forEach(function (key) {
     var value = props[key];
@@ -513,6 +512,7 @@ parser.parseComment = function (content, options) {
   var diff = _.difference(props, singular).filter(function (prop) {
     return prop !== 'param' &&
       prop !== 'input' &&
+      prop !== 'output' &&
       prop !== 'return' &&
       prop !== 'static' &&
       prop !== 'class' &&

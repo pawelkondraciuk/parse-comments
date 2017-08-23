@@ -1,17 +1,17 @@
-# parse-comments [![NPM version](https://badge.fury.io/js/parse-comments.svg)](http://badge.fury.io/js/parse-comments)  [![Build Status](https://travis-ci.org/jonschlinkert/parse-comments.svg)](https://travis-ci.org/jonschlinkert/parse-comments) 
+# parse-comments-angular [![NPM version](https://badge.fury.io/js/parse-comments.svg)](http://badge.fury.io/js/parse-comments)  [![Build Status](https://travis-ci.org/jonschlinkert/parse-comments.svg)](https://travis-ci.org/jonschlinkert/parse-comments) 
 
 > Parse code comments from JavaScript or any language that uses the same format.
 
 ## Install with [npm](npmjs.org)
 
 ```bash
-npm i parse-comments --save
+npm i parse-mrw-comments --save
 ```
 
 ## Usage
 
 ```js
-var comments = require('parse-comments');
+var comments = require('parse-mrw-comments');
 comments(str);
 ```
 
