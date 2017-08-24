@@ -20,6 +20,10 @@ var parseContext = require('parse-code-context');
 var inflect = require('inflection');
 var utils = require('./lib/utils');
 
+function Boolean (val) {
+  return val === 'true';
+}
+
 function parser (str, opts) {
   return parser.codeContext(str, opts);
 }
@@ -139,6 +143,24 @@ parser.parseParams = function (param) {
 };
 
 /**
+ * Parse the configurator from a string.
+ *
+ * @param  {String} `param`
+ * @return {Object}
+ */
+
+parser.parseConfigurator = function (param) {
+  var re = /(?:^\{([^\}]+)\}\s+)?(?:\[([\S=\' ]+)\]\s*)?(?:`([\S]+)`\s*)?([\s\S]*)?/;
+  if (typeof param !== 'string') return {};
+  var match = param.match(re);
+  var params = {};
+  if (match[2]) {
+    parser.parseSubprop(match, params);
+  }
+  return params;
+};
+
+/**
  * Parse the subproperties from parameters.
  *
  * @param  {String} `param`
@@ -155,7 +177,7 @@ parser.parseSubprop = function (match, params) {
     if (['values', 'default'].indexOf(paramName) >= 0 && eval(params.type)) {
       values = values.map(eval(params.type));
     }
-    params[paramName] = values;
+    params[paramName] = paramName.endsWith('s') ? values : values[0];
   }
   return params;
 };
@@ -401,19 +423,24 @@ parser.parseTags = function (comment, options) {
     input   : 'inputs',
     output  : 'outputs',
     property: 'properties',
-    option  : 'options'
+    option  : 'options',
+    configurator  : 'configurator',
   }, opts.subprops);
 
-  props = _.omit(props, ['parent', 'name', 'selector', 'configurator', 'constructor', 'class', 'type']);
+  props = _.omit(props, ['parent', 'name', 'selector', 'constructor', 'class', 'type']);
 
   Object.keys(props).forEach(function (key) {
     var value = props[key];
     if (comment[key]) {
 
       var arr = comment[key] || [];
-      comment[value] = arrayify(arr).map(function (str) {
-        return parser.parseParams(str);
-      });
+      if (key === 'configurator') {
+        comment[value] = parser.parseConfigurator(arr);
+      } else {
+        comment[value] = arrayify(arr).map(function (str) {
+          return parser.parseParams(str);
+        });
+      }
     }
   });
   return comment;
@@ -513,6 +540,7 @@ parser.parseComment = function (content, options) {
     return prop !== 'param' &&
       prop !== 'input' &&
       prop !== 'output' &&
+      prop !== 'configurator' &&
       prop !== 'return' &&
       prop !== 'static' &&
       prop !== 'class' &&
