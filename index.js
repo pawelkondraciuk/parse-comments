@@ -24,6 +24,10 @@ function Boolean (val) {
   return val === 'true';
 }
 
+function Arrayify(val) {
+
+}
+
 function parser (str, opts) {
   return parser.codeContext(str, opts);
 }
@@ -171,11 +175,16 @@ parser.parseSubprop = function (match, params) {
   var subprop = match[2];
   var parts = subprop.split(',');
   for (let part of parts) {
-    var def = part.split('=');
+    var def = part.split(/=(.+)/);
     var paramName = def[0].trim();
-    var values = def[1].replace(/'/g, '').split('|');
-    if (['values', 'default'].indexOf(paramName) >= 0 && eval(params.type)) {
-      values = values.map(eval(params.type));
+    if (params.type === 'Array') {
+      var values = def[1].slice(1, -1).replace(/'/g, '').split(',');
+      values = values.map()
+    } else {
+      var values = def[1].replace(/'/g, '').split('|');
+        if (['values', 'default'].indexOf(paramName) >= 0 && eval(params.type)) {
+        values = values.map(eval(params.type));
+      }
     }
     params[paramName] = paramName.endsWith('s') ? values : values[0];
   }
